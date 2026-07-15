@@ -35,7 +35,6 @@ button:disabled { opacity:.6; cursor:wait; }
 .result-time { font-weight:700; }
 .result-names { margin-top:3px; color:#0f766e; }
 .result-empty { color:#6b7280; font-style:italic; }
-.participant { border-left:4px solid #0f766e; background:#f8fafc; padding:10px 12px; margin:8px 0; border-radius:6px; }
 .note { color: #6b7280; font-size: .92rem; margin-top: 14px; }
 .privacy { color:#7c2d12; background:#fff7ed; border:1px solid #fdba74; border-radius:8px; padding:10px 12px; }
 @media (max-width:600px) { body{margin:12px auto;padding:0 10px;font-size:16px}.card{padding:17px}.option{padding:12px 10px} }
@@ -102,10 +101,8 @@ button:disabled { opacity:.6; cursor:wait; }
 
 <div class="card">
   <h2>Who is available so far</h2>
-  <p class="note">Availability is shared so the group can see which starts are most promising. Results refresh automatically.</p>
+  <p class="note">Availability is shared so the group can see which starts are most promising. Each fraction is: selected this time / total people who have completed the poll. Results refresh automatically.</p>
   <div id="results"><p class="result-empty">Loading responses…</p></div>
-  <h2 style="margin-top:28px;">Responses by person</h2>
-  <div id="participants"><p class="result-empty">Loading responses…</p></div>
   <p id="last-updated" class="note"></p>
 </div>
 
@@ -146,6 +143,7 @@ function make(tag, className, text) {
 }
 function renderResponses(data) {
   const responses = Array.isArray(data.responses) ? data.responses : [];
+  const completedCount = responses.length;
   const byTime = new Map(optionItems.filter(x => x.type === 'time').map(x => [x.label, []]));
   responses.forEach(response => {
     (Array.isArray(response.selections) ? response.selections : []).forEach(label => {
@@ -164,16 +162,11 @@ function renderResponses(data) {
     const row = make('div','result-row');
     row.appendChild(make('div','result-time',item.label));
     const names = byTime.get(item.label) || [];
-    row.appendChild(make('div', names.length ? 'result-names' : 'result-empty', names.length ? `Available: ${names.join(', ')}` : 'No one has selected this time yet.'));
+    const availabilityText = names.length
+      ? `Available (${names.length}/${completedCount}): ${names.join(', ')}`
+      : `Available (0/${completedCount}): No one has selected this time yet.`;
+    row.appendChild(make('div', names.length ? 'result-names' : 'result-empty', availabilityText));
     results.appendChild(row);
-  });
-
-  const participants = document.getElementById('participants');
-  participants.innerHTML = '';
-  if (!responses.length) participants.appendChild(make('p','result-empty','No responses have been saved yet.'));
-  responses.slice().sort((a,b) => a.name.localeCompare(b.name)).forEach(response => {
-    const selections = Array.isArray(response.selections) ? response.selections : [];
-    participants.appendChild(make('div','participant', selections.length ? `${response.name}: ${selections.join('; ')}` : `${response.name}: None of the proposed times work.`));
   });
   document.getElementById('last-updated').textContent = `Last refreshed: ${new Date().toLocaleString()}`;
 }
